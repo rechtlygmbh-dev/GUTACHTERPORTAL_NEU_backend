@@ -43,7 +43,8 @@ const DocumentSchema = new mongoose.Schema({
       'sonstige',
       'atteste',
       'reparatur',
-      'sonstiges'
+      'sonstiges',
+      'vollmacht'
     ],
     default: 'sonstiges'
   },

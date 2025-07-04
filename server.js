@@ -72,12 +72,10 @@ app.use((req, res, next) => {
 const userRoutes = require('./api/routes/users');
 const caseRoutes = require('./api/routes/cases');
 const documentRoutes = require('./api/routes/documents');
-const docusealRoutes = require('./api/routes/docuseal');
 
 app.use('/api/users', userRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/documents', documentRoutes);
-app.use('/api/docuseal', docusealRoutes);
 
 // Upload-Ordner öffentlich zugänglich machen (nur für Entwicklung)
 if (process.env.NODE_ENV !== 'production') {
