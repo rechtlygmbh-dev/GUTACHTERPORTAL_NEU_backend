@@ -514,4 +514,41 @@ exports.getAllDocuments = async (req, res) => {
       fehler: error.message
     });
   }
+};
+
+// Download der signierten Datenschutzerklärung per Fall-ID
+exports.downloadDatenschutzPdf = async (req, res) => {
+  try {
+    const { fallId } = req.params;
+    const Case = require('../models/Case');
+    const Minio = require('minio');
+    // MinIO Konfiguration (wie oben)
+    const minioClient = new Minio.Client({
+      endPoint: process.env.MINIO_ENDPOINT?.replace(/^https?:\/\//, '') || 'localhost',
+      port: parseInt(process.env.MINIO_PORT) || 9000,
+      useSSL: process.env.MINIO_USE_SSL === 'true',
+      accessKey: process.env.MINIO_ROOT_USER,
+      secretKey: process.env.MINIO_ROOT_PASSWORD
+    });
+    const MINIO_BUCKET = process.env.MINIO_BUCKET || 'gutachten';
+
+    const fall = await Case.findById(fallId);
+    if (!fall || !fall.datenschutzPdfPfad) {
+      return res.status(404).json({ erfolg: false, nachricht: 'Signierte Datenschutzerklärung nicht gefunden' });
+    }
+
+    // PDF aus MinIO holen
+    minioClient.getObject(MINIO_BUCKET, fall.datenschutzPdfPfad, (err, dataStream) => {
+      if (err) {
+        console.error('Fehler beim Abrufen des PDFs aus MinIO:', err);
+        return res.status(500).json({ erfolg: false, nachricht: 'Fehler beim Abrufen des Dokuments' });
+      }
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="datenschutzerklaerung_signiert.pdf"`);
+      dataStream.pipe(res);
+    });
+  } catch (error) {
+    console.error('Fehler beim Download der Datenschutzerklärung:', error);
+    res.status(500).json({ erfolg: false, nachricht: 'Serverfehler beim Download der Datenschutzerklärung' });
+  }
 }; 

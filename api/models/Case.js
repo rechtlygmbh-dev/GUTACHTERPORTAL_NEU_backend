@@ -50,6 +50,11 @@ const CaseSchema = new mongoose.Schema({
     unfallort: String,
     unfallzeit: String
   },
+  vermitteltVon: [{
+    vorname: String,
+    nachname: String,
+    unternehmen: String
+  }],
   dokumente: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Document'
@@ -99,7 +104,9 @@ const CaseSchema = new mongoose.Schema({
   uebermittlungen: {
     type: Number,
     default: 0
-  }
+  },
+  datenschutzUnterschrieben: { type: Boolean, default: false },
+  datenschutzPdfPfad: { type: String },
 }, {
   timestamps: true
 });

@@ -53,6 +53,12 @@ exports.createCase = async (req, res) => {
     const mandantData = mandant || {};
     mandantData.mandantennummer = mandantennummer;
 
+    // Vermittler übernehmen (immer als Array speichern)
+    let vermittler = req.body.vermitteltVon;
+    if (vermittler && !Array.isArray(vermittler)) {
+      vermittler = [vermittler];
+    }
+
     const newCase = await Case.create({
       fallname,
       aktenzeichen: aktenzeichenFinal,
@@ -62,6 +68,7 @@ exports.createCase = async (req, res) => {
       erstPartei,
       zweitPartei,
       schaden,
+      vermitteltVon: vermittler,
       erstelltVon: req.user.id,
       zugewiesenAn: req.user.id, // Standardmäßig dem Ersteller zuweisen
       gutachterNummer,
@@ -211,6 +218,10 @@ exports.updateCase = async (req, res) => {
     // Schutz: Dokumente dürfen nicht per Update überschrieben werden
     if (updateData.dokumente !== undefined) {
       delete updateData.dokumente;
+    }
+    // Vermittler übernehmen (immer als Array speichern)
+    if (updateData.vermitteltVon && !Array.isArray(updateData.vermitteltVon)) {
+      updateData.vermitteltVon = [updateData.vermitteltVon];
     }
 
     const updatedCase = await Case.findByIdAndUpdate(

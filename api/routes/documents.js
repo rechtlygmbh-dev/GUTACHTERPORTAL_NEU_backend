@@ -7,7 +7,8 @@ const {
   getDocumentById, 
   downloadDocument, 
   deleteDocument,
-  getAllDocuments 
+  getAllDocuments,
+  downloadDatenschutzPdf
 } = require('../controllers/documentController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -30,5 +31,8 @@ router.route('/:id')
 
 // Dokument herunterladen
 router.get('/:id/download', downloadDocument);
+
+// Download der signierten Datenschutzerklärung per Fall-ID
+router.get('/download/datenschutz/:fallId', downloadDatenschutzPdf);
 
 module.exports = router; 
