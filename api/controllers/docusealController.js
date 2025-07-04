@@ -1,6 +1,7 @@
 const axios = require('axios');
 const Minio = require('minio');
 const Case = require('../models/Case');
+const Document = require('../models/Document');
 
 // MinIO-Konfiguration (wie in server.js)
 const minioClient = new Minio.Client({
@@ -36,6 +37,22 @@ exports.handleDocusealWebhook = async (req, res) => {
     fall.datenschutzUnterschrieben = true;
     // Optional: Link zum PDF speichern
     fall.datenschutzPdfPfad = minioPath;
+
+    // --- NEU: Dokument-Objekt anlegen und dem Fall zuordnen ---
+    const vollmachtDocument = await Document.create({
+      name: 'Signierte Vollmacht',
+      beschreibung: 'Vom Mandanten digital unterschriebene Vollmacht',
+      dateityp: 'application/pdf',
+      groesse: pdfBuffer.length,
+      pfad: minioPath,
+      fall: fall._id,
+      hochgeladenVon: null, // System-User oder null
+      kategorie: 'vollmacht',
+      tags: ['vollmacht', 'signiert']
+    });
+    fall.dokumente.push(vollmachtDocument._id);
+    // --- ENDE NEU ---
+
     await fall.save();
 
     res.json({ erfolg: true });
