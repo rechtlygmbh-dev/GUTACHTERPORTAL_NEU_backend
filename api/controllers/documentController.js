@@ -433,7 +433,7 @@ exports.getAllDocuments = async (req, res) => {
     // Filter für den aktuellen Benutzer erstellen
     const filter = {};
     
-    // Wenn nicht Admin, dann nur Dokumente zeigen, auf die der Benutzer Zugriff hat
+    // Wenn nicht Admin, dann nur Dokumente zeigen, auf die der Benutzer Zugriff hat ODER die er selbst hochgeladen hat
     if (req.user.rolle !== 'admin') {
       // Zunächst alle Fälle finden, auf die der Benutzer Zugriff hat
       const userCases = await Case.find({
@@ -442,37 +442,39 @@ exports.getAllDocuments = async (req, res) => {
           { zugewiesenAn: req.user.id }
         ]
       });
-      
-      // Fallbezogenen Filter erstellen (Dokumente, die zu diesen Fällen gehören)
-      if (userCases.length > 0) {
-        filter.fall = { $in: userCases.map(c => c._id) };
-      } else {
-        // Wenn keine Fälle gefunden wurden, leere Liste zurückgeben
-        return res.json({ erfolg: true, dokumente: [], gesamt: 0, seite: 1, seiten: 1 });
+      // IDs der Fälle, auf die der User Zugriff hat
+      const caseIds = userCases.map(c => c._id);
+      // Filter: Dokumente aus diesen Fällen ODER vom User selbst hochgeladen
+      filter.$or = [
+        { fall: { $in: caseIds } },
+        { hochgeladenVon: req.user.id }
+      ];
+      // Wenn keine Fälle und keine eigenen Dokumente, leere Liste zurückgeben
+      if (caseIds.length === 0) {
+        const ownDocsCount = await Document.countDocuments({ hochgeladenVon: req.user.id });
+        if (ownDocsCount === 0) {
+          return res.json({ erfolg: true, dokumente: [], gesamt: 0, seite: 1, seiten: 1 });
+        }
       }
     }
-    
     // Filter für den Namen des Dokuments (falls angegeben)
     if (req.query.name) {
       // Erweiterte Suche in name und titel
-      filter.$or = [
+      filter.$or = filter.$or || [];
+      filter.$or.push(
         { name: { $regex: req.query.name, $options: 'i' } },
         { titel: { $regex: req.query.name, $options: 'i' } }
-      ];
+      );
     }
-    
     // Filter für die Kategorie des Dokuments (falls angegeben)
     if (req.query.kategorie) {
       filter.kategorie = req.query.kategorie;
     }
-    
     // Sortierung und Paginierung
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 100; // Höheres Limit (100 statt 50)
     const skip = (page - 1) * limit;
-    
     console.log('🔍 Abfrage-Filter für Dokumente:', filter);
-    
     // Dokumente mit Filter abrufen und populieren
     const documents = await Document.find(filter)
       .populate('hochgeladenVon', 'vorname nachname email')
@@ -493,12 +495,9 @@ exports.getAllDocuments = async (req, res) => {
       .sort({ hochgeladenAm: -1 })
       .skip(skip)
       .limit(limit);
-    
     // Gesamtzahl für Paginierung
     const total = await Document.countDocuments(filter);
-    
     console.log(`📊 ${documents.length} Dokumente gefunden. Gesamt: ${total}`);
-    
     res.json({
       erfolg: true,
       seite: page,
