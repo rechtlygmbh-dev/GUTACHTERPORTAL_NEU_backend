@@ -1,11 +1,11 @@
 {
   "name": "gutachterportal-backend",
   "version": "1.0.0",
-  "description": "Backend für das Gutachterportal",
+  "description": "Backend f\u00fcr das Gutachterportal",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node api.js && node server.js",
+    "dev": "node api.js && nodemon server.js",
     "build": "npm install"
   },
   "dependencies": {
